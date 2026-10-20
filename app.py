@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import yt_dlp
+import requests
 import os
 
 app = Flask(__name__)
@@ -28,25 +28,32 @@ def extract():
         return jsonify({'error': 'Unauthorized'}), 401
     
     data = request.get_json()
-    url = data.get('url')
+    url = data.get('url', '')
     
     try:
-        ydl_opts = {
-            'format': 'best', 
-            'quiet': True,
-            'extractor_args': {
-                'youtube': {
-                    'player_client': ['ios', 'web']
-                }
-            }
+        # Cobalt API ကို အသုံးပြု၍ Video Link ရယူခြင်း
+        api_url = "https://api.cobalt.tools/api/json"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=False)
-            video_url = info.get('url')
-            title = info.get('title', 'Video')
-        return jsonify({'success': True, 'video_url': video_url, 'title': title})
+        payload = {"url": url}
+        
+        response = requests.post(api_url, json=payload, headers=headers)
+        res_data = response.json()
+        
+        if res_data.get('status') == 'stream' or res_data.get('status') == 'redirect':
+            video_url = res_data.get('url')
+            return jsonify({'success': True, 'video_url': video_url, 'title': 'Download Video'})
+        elif res_data.get('status') == 'picker':
+            video_url = res_data['picker'][0]['url']
+            return jsonify({'success': True, 'video_url': video_url, 'title': 'Download Video'})
+        else:
+            error_msg = res_data.get('text', 'Video မတွေ့ရှိပါ သို့မဟုတ် Download ဆွဲ၍ မရပါ')
+            return jsonify({'success': False, 'error': error_msg})
+            
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'success': False, 'error': 'လိုင်းမကောင်းပါ သို့မဟုတ် ခေတ္တ အဆင်မပြေပါ'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
