@@ -31,7 +31,11 @@ def extract():
     url = data.get('url')
     
     try:
-        ydl_opts = {'format': 'best', 'quiet': True}
+        ydl_opts = {
+            'format': 'best', 
+            'quiet': True,
+            'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
+        }
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
             video_url = info.get('url')
