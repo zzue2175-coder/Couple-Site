@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Video Downloader</title>
+    <style>
+        body { background: #fff0f3; font-family: sans-serif; text-align: center; padding: 50px 20px; margin: 0; }
+        .container { background: white; max-width: 400px; margin: 0 auto; padding: 30px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        h1 { color: #ff4d6d; font-size: 24px; }
+        input { width: 90%; padding: 12px; margin: 15px 0; border: 2px solid #ffccd5; border-radius: 8px; font-size: 14px; }
+        button { background: #ff4d6d; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #ff1a40; }
+        #result { margin-top: 20px; word-break: break-all; }
+        .video-box { margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✨ TikTok & YouTube Downloader ✨</h1>
+        <p>Download our favorite videos easily, my love! ❤️</p>
+        <input type="text" id="urlInput" placeholder="Paste video link here...">
+        <br>
+        <button onclick="extractVideo()">Get Download Link</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function extractVideo() {
+            const url = document.getElementById('urlInput').value;
+            const resultDiv = document.getElementById('result');
+            if(!url) { alert('Please enter a link!'); return; }
+            
+            resultDiv.innerHTML = "Processing...";
+            
+            try {
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await response.json();
+                if(data.success) {
+                    resultDiv.innerHTML = `<div class="video-box">
+                        <p><b>${data.title}</b></p>
+                        <a href="${data.video_url}" target="_blank" download style="background: #2ec4b6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Download Video Now 📥</a>
+                    </div>`;
+                } else {
+                    resultDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+                }
+            } catch(err) {
+                resultDiv.innerHTML = `<p style="color:red;">Something went wrong!</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
