@@ -31,7 +31,7 @@ def extract():
     url = data.get('url')
     
     try:
-           ydl_opts = {
+        ydl_opts = {
             'format': 'best', 
             'quiet': True,
             'extractor_args': {
