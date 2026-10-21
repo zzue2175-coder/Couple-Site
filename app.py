@@ -25,13 +25,17 @@ def index():
 @app.route('/extract', methods=['POST'])
 def extract():
     if not session.get('authenticated'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.get_json()
-    url = data.get('url', '')
+        return jsonify({'success': False, 'error': 'Unauthorized'}), 401
     
     try:
-        # Cobalt API ကို အသုံးပြု၍ Video Link ရယူခြင်း
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'})
+        
+        url = data.get('url', '')
+        if not url:
+            return jsonify({'success': False, 'error': 'လင့်ခ် ထည့်ရန် လိုအပ်ပါသည်။'})
+        
         api_url = "https://api.cobalt.tools/api/json"
         headers = {
             "Accept": "application/json",
@@ -39,21 +43,22 @@ def extract():
         }
         payload = {"url": url}
         
-        response = requests.post(api_url, json=payload, headers=headers)
+        response = requests.post(api_url, json=payload, headers=headers, timeout=15)
         res_data = response.json()
         
-        if res_data.get('status') == 'stream' or res_data.get('status') == 'redirect':
-            video_url = res_data.get('url')
-            return jsonify({'success': True, 'video_url': video_url, 'title': 'Download Video'})
-        elif res_data.get('status') == 'picker':
-            video_url = res_data['picker'][0]['url']
-            return jsonify({'success': True, 'video_url': video_url, 'title': 'Download Video'})
-        else:
-            error_msg = res_data.get('text', 'Video မတွေ့ရှိပါ သို့မဟုတ် Download ဆွဲ၍ မရပါ')
-            return jsonify({'success': False, 'error': error_msg})
+        status = res_data.get('status')
+        if status in ['stream', 'redirect']:
+            return jsonify({'success': True, 'video_url': res_data.get('url'), 'title': 'Download Video'})
+        elif status == 'picker':
+            picker = res_data.get('picker')
+            if picker and len(picker) > 0:
+                return jsonify({'success': True, 'video_url': picker[0].get('url'), 'title': 'Download Video'})
+        
+        error_msg = res_data.get('text', 'ဗီဒီယို လင့်ခ် ထုတ်ယူ၍ မရပါ။')
+        return jsonify({'success': False, 'error': error_msg})
             
     except Exception as e:
-        return jsonify({'success': False, 'error': 'လိုင်းမကောင်းပါ သို့မဟုတ် ခေတ္တ အဆင်မပြေပါ'})
+        return jsonify({'success': False, 'error': 'ဆာဗာ ချိတ်ဆက်မှု အဆင်မပြေပါ။'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
